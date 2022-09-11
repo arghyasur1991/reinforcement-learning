@@ -4,20 +4,20 @@ import copy
 from collections import deque
 import random
 
-class DQN_Agent:
 
+class DQN_Agent:
     def __init__(self, seed, layer_sizes, lr, sync_freq, exp_replay_size):
         torch.manual_seed(seed)
         self.q_net = self.build_nn(layer_sizes)
         self.target_net = copy.deepcopy(self.q_net)
-        self.q_net.cuda()
-        self.target_net.cuda()
+        # self.q_net.cuda()
+        # self.target_net.cuda()
         self.loss_fn = torch.nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.q_net.parameters(), lr=lr)
 
         self.network_sync_freq = sync_freq
         self.network_sync_counter = 0
-        self.gamma = torch.tensor(0.95).float().cuda()
+        self.gamma = torch.tensor(0.95).float()  # .cuda()
         self.experience_replay = deque(maxlen=exp_replay_size)
         return
 
@@ -40,7 +40,7 @@ class DQN_Agent:
         # We do not require gradient at this point, because this function will be used either
         # during experience collection or during inference
         with torch.no_grad():
-            Qp = self.q_net(torch.from_numpy(state).float().cuda())
+            Qp = self.q_net(torch.from_numpy(state).float())  #.cuda())
         Q, A = torch.max(Qp, axis=0)
         A = A if torch.rand(1, ).item() > epsilon else torch.randint(0, action_space_len, (1,))
         return A
@@ -72,12 +72,13 @@ class DQN_Agent:
             self.network_sync_counter = 0
 
         # predict expected return of current state using main network
-        qp = self.q_net(s.cuda())
+        qp = self.q_net(s) #.cuda())
         pred_return, _ = torch.max(qp, axis=1)
 
         # get target return using target network
-        q_next = self.get_q_next(sn.cuda())
-        target_return = rn.cuda() + self.gamma * q_next
+        q_next = self.get_q_next(sn) #.cuda())
+        target_return = rn + self.gamma * q_next
+        # target_return = rn.cuda() + self.gamma * q_next
 
         loss = self.loss_fn(pred_return, target_return)
         self.optimizer.zero_grad()
